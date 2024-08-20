@@ -20,12 +20,20 @@ class GetFiles:
         print('Downloading Extra Exam Questions')
         extra_file = requests.get(GetFiles.extra_url)
         ## Gotta do something different here??
-        if tech_file.status_code == 200:
+        files = [tech_file,general_file,extra_file]
+        for file in files:
+            if file.status_code != 200:
+                print(f'Check your internet - status code:{file.status_code}')
+                quit()
+        GetFiles.parse_files(tech_file,general_file,extra_file)
+                
+                
+        """if tech_file.status_code == 200:
             if general_file.status_code == 200:
                 if extra_file.status_code == 200:
                     GetFiles.parse_files(tech_file,general_file,extra_file)
         else:
-            print(f'Check your internet - status code:{tech_file.status_code}')
+            print(f'Check your internet - status code:{tech_file.status_code}')"""
     
             
     def parse_files(tech_file,general_file,extra_file):
@@ -87,6 +95,17 @@ class UserI:
     current_section = None
     quit_list = ['q','Q','73',73,'quit','QUIT']
     
+    def input_to_int(prompt):
+        while True:
+            user_input = input(prompt)
+            try:
+                if user_input in UserI.quit_list:
+                    quit()
+                return int(user_input)
+            except ValueError:
+                print(f"Try another selection")
+            
+    
     def get_dict_value(data, key):
         return [item.get(key) for item in data]
     
@@ -94,24 +113,17 @@ class UserI:
         for num,key in enumerate(ReadFile.file_dict.keys(),1):
             print(f"{num} - {key}")
         print('73 - Quit Program')
-        ans = input("What course do you want? ")
-        if ans == str:
-            if ans in UserI.quit_list:
-                quit()
-            UserI.get_course()
-        else:
-            ans = int(ans)
-            
+        ans = UserI.input_to_int("What course do you want? ")
+        #ans = input("What course do you want? ")
         UserI.current_course = ans
         UserI.get_pool(course_num.get(ans))
+        
         
     def get_pool(data):
         for num, item in enumerate(data):
             print(f"{num}. {item.get('name')}")
         print('73 - Quit Program')
-        ans = int(input('What pool would you like? '))
-        if ans in UserI.quit_list:
-            quit()
+        ans = UserI.input_to_int('What pool would you like? ')
         UserI.current_pool = ans
         UserI.get_section(data,ans)
         
@@ -119,9 +131,7 @@ class UserI:
         for num, item in enumerate(tech['pool'][sec]['sections']):
              print(f"{num}. - {item.get('summary')}\n")
         print('73 - Quit Program')
-        ans = int(input('What section would you like? '))
-        if ans in UserI.quit_list:
-            quit()
+        ans = UserI.input_to_int('What section would you like? ')
         UserI.current_section = ans
         UserI.get_random_question(data,sec,ans)
     
@@ -130,19 +140,24 @@ class UserI:
         UserI.display_question(random_question)
                 
     def display_question(question):
-        
+        answers = ['A','B','C','D']
         print(f"\nQuestion id: {question['id']}")
         print(f"\n{question['text']}\n")
         for letter, answer in question['answers'].items():
             print(f"{letter} - {answer}")
         print('\n73 - Quit Program')
         ans = input("\nWhat is your selection? ")        
-        if ans.upper() == question['answer']:
-            UserI.answer_correct(question)
+        if ans.upper() in answers:
+            if ans.upper() == question['answer']:
+                UserI.answer_correct(question)
+            else:
+                UserI.answer_missed(question)
         elif ans in UserI.quit_list:
             ExitCode.qcount()
         else:
-            UserI.answer_missed(question)
+            print('Try something else')
+            UserI.display_question(question)
+        
     
     def answer_correct(question):
         print("*" * 30, " You got it! ", "*" * 30)
