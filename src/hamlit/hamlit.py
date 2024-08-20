@@ -6,31 +6,37 @@ import pandas as pd
 import random
 
 class GetFiles:
+    # JSON file URL's from HamStudy.org
     tech_url = 'https://hamstudy.org/api/pools/E2_2022'
     general_url = 'https://hamstudy.org/api/pools/E3_2023'
     extra_url = 'https://hamstudy.org/api/pools/E4_2024'
 
     def download_files():
+        print("Fetching Exam Questions from HamStudy.org...")
         print('Downloading Technician Exam Questions')
         tech_file = requests.get(GetFiles.tech_url)
         print('Downloading General Exam Questions')
         general_file = requests.get(GetFiles.general_url)
         print('Downloading Extra Exam Questions')
         extra_file = requests.get(GetFiles.extra_url)
+        ## Gotta do something different here??
         if tech_file.status_code == 200:
             if general_file.status_code == 200:
                 if extra_file.status_code == 200:
                     GetFiles.parse_files(tech_file,general_file,extra_file)
         else:
             print(f'Check your internet - status code:{tech_file.status_code}')
-        
+    
+            
     def parse_files(tech_file,general_file,extra_file):
+        ## Import and parse downloaded JSON files to pass onto write_files function
         tech = ujson.loads(tech_file.text)
         general = ujson.loads(general_file.text)
         extra = ujson.loads(extra_file.text)
         GetFiles.write_files(tech,general,extra)
         
     def write_files(tech_file,general_file,extra_file):
+        ## Saves JSON files downloaded from HamStudy.org to local disk
         print('writing files...')
         with open(ReadFile.file_dict['Technician'], 'w') as json_file:
             ujson.dump(tech_file, json_file, indent=4)
@@ -38,7 +44,7 @@ class GetFiles:
             ujson.dump(general_file, json_file, indent=4)
         with open(ReadFile.file_dict['Extra'], 'w') as json_file:
             ujson.dump(extra_file, json_file, indent=4)
-        print('Saved')
+        print(f'Success! Files Saved in {os.getcwd()}')
 
 class ReadFile:
     
@@ -47,11 +53,13 @@ class ReadFile:
     def check_file():
         # Checks to see if files are locally stored
         # otherwise attempts to download from HamStudy.org
-        print("Checking for Exam Question files")
+        print(f"Checking for Exam Question files in {os.getcwd()}")
         for key in ReadFile.file_dict.keys():
-            if not os.path.exists(ReadFile.file_dict[key]):
+            if os.path.exists(ReadFile.file_dict[key]):
+                continue
+            else:
                 GetFiles.download_files()
-            
+                
     def read_file():
         # This loads the json files and creates class attributes using file_dict keys:
         # Technician, General, Extra
@@ -61,6 +69,7 @@ class ReadFile:
                 
 
 class ShowData:
+     
     question_correct = None
     question_missed = None
     
@@ -76,7 +85,8 @@ class UserI:
     current_course = None
     current_pool = None
     current_section = None
-        
+    quit_list = ['q','Q','73',73,'quit','QUIT']
+    
     def get_dict_value(data, key):
         return [item.get(key) for item in data]
     
@@ -84,9 +94,14 @@ class UserI:
         for num,key in enumerate(ReadFile.file_dict.keys(),1):
             print(f"{num} - {key}")
         print('73 - Quit Program')
-        ans = int(input("What course do you want? "))
-        if ans == 73:
-            quit()
+        ans = input("What course do you want? ")
+        if ans == str:
+            if ans in UserI.quit_list:
+                quit()
+            UserI.get_course()
+        else:
+            ans = int(ans)
+            
         UserI.current_course = ans
         UserI.get_pool(course_num.get(ans))
         
@@ -95,7 +110,7 @@ class UserI:
             print(f"{num}. {item.get('name')}")
         print('73 - Quit Program')
         ans = int(input('What pool would you like? '))
-        if ans == 73:
+        if ans in UserI.quit_list:
             quit()
         UserI.current_pool = ans
         UserI.get_section(data,ans)
@@ -105,7 +120,7 @@ class UserI:
              print(f"{num}. - {item.get('summary')}\n")
         print('73 - Quit Program')
         ans = int(input('What section would you like? '))
-        if ans == 73:
+        if ans in UserI.quit_list:
             quit()
         UserI.current_section = ans
         UserI.get_random_question(data,sec,ans)
@@ -115,22 +130,22 @@ class UserI:
         UserI.display_question(random_question)
                 
     def display_question(question):
-        print(f"\nQuestion id: {question['id']}\n")
+        
+        print(f"\nQuestion id: {question['id']}")
         print(f"\n{question['text']}\n")
         for letter, answer in question['answers'].items():
             print(f"{letter} - {answer}")
-        print('73 - Quit Program')
-        ans = input("\nWhat is your selection? ")
-        
+        print('\n73 - Quit Program')
+        ans = input("\nWhat is your selection? ")        
         if ans.upper() == question['answer']:
             UserI.answer_correct(question)
-        elif str(ans) == '73':
-            quit()
+        elif ans in UserI.quit_list:
+            ExitCode.qcount()
         else:
             UserI.answer_missed(question)
     
     def answer_correct(question):
-        print("*" * 8, " You got it! ", "*" * 8)
+        print("*" * 30, " You got it! ", "*" * 30)
         if ShowData.question_correct == None:
             ShowData.question_correct = set()
             ShowData.question_correct.add(question['id'])
@@ -152,12 +167,16 @@ class UserI:
     
     
     def get_question(data,sec,q,p):
+        ## Get a specific question: data=dict(source dictionary), sec=int(section),
+        ## q=int(sub section),p=int(actual question)
         print(f"\n{data[sec]['sections'][q]['questions'][p]['text']}\n")
         for num, answer in tech['pool'][sec]['sections'][q]['questions'][p]['answers'].items():
             print(f"{num} - {answer}")
         ans = input("\nWhat is your selection? ")
         if ans.upper() == data[sec]['sections'][q]['questions'][p]['answer']:
             print('You got it')
+        elif ans in UserI.quit_list:
+            quit()
         else:
             print('Not it')
             
@@ -171,11 +190,39 @@ class DData:
         DData.tech = dict(x)
         return DData.tech
 
-### RUN CODE ###
+class ExitCode:
+    
+    def qcount():
+        if ShowData.question_correct != None:
+            ccount = len(ShowData.question_correct)
+            print(f"\nNumber Correct: {ccount}")
+        if ShowData.question_missed != None:
+            mcount = len(ShowData.question_missed)
+            print(f"Number Missed: {mcount}")
+        """if ccount in :
+            print("You got 100% Correct!")
+        elif mcount in locals():
+            print("You got 0% Correct.")
+        else:
+            tcount = ccount + mcount
+            print(f"You got {(ccount/tcount)*100}% Correct!")
+        """
+    
+    
+class TestingCode:
+    #UserI.get_section(tech_sections, 0)
+    #UserI.get_question(0,0,0)
+    #UserI.get_pool(tech_pool)
+    #ShowData.screen(tech_pool_all)
+    #UserI.get_pool()
+    #print(UserI.get_section(tech['pool'][0]['sections'], 'summary'))
+    #print(tech['pool'][0].get('name'))
+    pass
 
+### RUN CODE ###
+### RUN CODE ###
 # Create class attributes to ReadFile
 # Technician, General, Extra 
-
 ReadFile.check_file()
 ReadFile.read_file()
 
@@ -189,19 +236,9 @@ tech_pool = tech['pool']
 general_pool = general['pool']
 extra_pool = extra['pool']
 course_num = {1:tech_pool,2:general_pool,3:extra_pool}
-    
-
-#UserI.get_section(tech_sections, 0)
-#UserI.get_question(0,0,0)
 
 ## User Interface run code ##
 UserI.get_course()
 
+    
 
-
-
-#UserI.get_pool(tech_pool)
-#ShowData.screen(tech_pool_all)
-#UserI.get_pool()
-#print(UserI.get_section(tech['pool'][0]['sections'], 'summary'))
-#print(tech['pool'][0].get('name'))
