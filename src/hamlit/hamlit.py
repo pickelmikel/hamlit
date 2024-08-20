@@ -26,16 +26,7 @@ class GetFiles:
                 print(f'Check your internet - status code:{file.status_code}')
                 quit()
         GetFiles.parse_files(tech_file,general_file,extra_file)
-                
-                
-        """if tech_file.status_code == 200:
-            if general_file.status_code == 200:
-                if extra_file.status_code == 200:
-                    GetFiles.parse_files(tech_file,general_file,extra_file)
-        else:
-            print(f'Check your internet - status code:{tech_file.status_code}')"""
-    
-            
+                    
     def parse_files(tech_file,general_file,extra_file):
         ## Import and parse downloaded JSON files to pass onto write_files function
         tech = ujson.loads(tech_file.text)
