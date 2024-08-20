@@ -26,10 +26,12 @@ Ham Radio Tech license question pool tool and trainer.
 Features
 --------
 
-* TODO
+* Load all exam questions to practice
 
 Credits
 -------
+HamStudy.org - Source of exam question pool JSON files
+Please visit www.hamstudy.org to study for your exam
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
